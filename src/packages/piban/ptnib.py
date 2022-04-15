@@ -16,16 +16,17 @@ VALID_IBAN_PREFIXES = {
     "PT50": "Portugal",
 }
 
+MIN_NIB_LENGTH = 21
+
 
 class slimIBAN():
     """ slimIBAN class
     """
     def __init__(self, data=""):
-        self.clutter = ""
+        self._clutter = ""
         self.cLetters = ""
         self.nib = ""
         self.validNIB = False
-        self.minNIB_length = 21
         self.niban = data
         self.validCRC = False
         self.s = None
@@ -37,7 +38,26 @@ class slimIBAN():
         return self.validNIB and self.validCRC
 
     def calc_check_digit(self, nr19):
+        """ Calculates check digits from 19-digit NIB """
         return IbanMethods().calc_check_digit(nr19)
+
+    def min_nib_length(self) -> int:
+        """ Returns the minimum NIB length;
+		(not IBAN length; IBAN length is 25 in PT)
+        """
+        return MIN_NIB_LENGTH
+
+    def __str__(self) -> str:
+        """ Returns the country IBAN, in a readable way """
+        astr = self.readable_nib()
+        if not astr:
+            return ""
+        astr = self.niban[:4] + " " + astr
+        return astr
+
+    def __repr__(self) -> str:
+        astr = self.__str__()
+        return f"'{astr}'"
 
     def readable_nib(self):
         if not self.all_valid():
@@ -53,26 +73,26 @@ class slimIBAN():
         self.validNIB = False
         self.validCRC = False
         onlyDigitsNow = False
-        self.clutter = ""
+        self._clutter = ""
         for c in nStr:
             if c.isdigit():
                 dig += c
                 onlyDigitsNow = True
             elif 'A' <= c <= 'Z':
                 if onlyDigitsNow:
-                    self.clutter += c
+                    self._clutter += c
                 else:
                     cCode += c
         fullStr = cCode + dig
-        isOk = len(fullStr) >= 21 and not self.clutter
+        isOk = len(fullStr) >= 21 and not self._clutter
         if not isOk:
             return ""
         if cCode == IbanMethods().country_abbrev:
             nibOk = True
             self.nib = fullStr[4:]
         if not nibOk:
-            if len(fullStr) >= self.minNIB_length:
-                self.nib = fullStr[len( cCode ):]
+            if len(fullStr) >= self.min_nib_length():
+                self.nib = fullStr[len(cCode):]
                 nibOk = cCode == ""
         if self.nib:
             nr19 = self.nib[:-2]
@@ -97,32 +117,26 @@ class IbanMethods():
     @staticmethod
     def calc_check_digit_pt(nr19):
         weight = [73, 17, 89, 38, 62, 45, 53, 15, 50, 5, 49, 34, 81, 76, 27, 90, 9, 30, 3]
-        if isinstance(nr19, str):
-            triple = [False, nr19, 0]
-        else:
-            triple = nr19
-        assert len(triple) == 3
-        aNum = triple[1]
+        assert isinstance(nr19, str)
+        aNum = nr19
         aLen = len(aNum)
         if aLen == 19:
             rememberAB = aNum
+        elif aLen == 21:
+            rememberAB = aNum[0:19]
         else:
-            if aLen == 21:
-                rememberAB = aNum[0:19]
-            else:
-                return [False, -1, "", ""]
+            #print(f"calc_check_digit() failed (len#={len(nr19)}): '{nr19}'")
+            return [False, -1, "", ""]
         if all_digits(aNum[0:19]):
             aSum = 0
-            i = 0
-            while i < 19:
-                aSum += (weight[i] * (ord(aNum[i])-ord('0')))
-                i += 1
-            cd = 98 - (aSum % 97)
-            if cd < 10:
-                cdStr = "0" + str(cd)
+            for idx in range(19):
+                aSum += (weight[idx] * (ord(aNum[idx]) - ord('0')))
+            c_dig = 98 - (aSum % 97)
+            if c_dig < 10:
+                cdStr = "0" + str(c_dig)
             else:
-                cdStr = str(cd)
-            return (True, cdStr, cd, (rememberAB + cdStr))
+                cdStr = str(c_dig)
+            return (True, cdStr, c_dig, (rememberAB + cdStr))
         return (False, "", -1, "?", aNum)
 
     @staticmethod
@@ -135,7 +149,6 @@ class IbanMethods():
         transtr = IbanMethods().ban_translate(bstr)
         anum = int(transtr)
         val = anum % 97
-        print("anum:", anum, "; val:", val, "; bstr:", bstr)
         return val
 
     @staticmethod
