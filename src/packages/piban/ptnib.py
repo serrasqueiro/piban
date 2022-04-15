@@ -64,33 +64,33 @@ class slimIBAN():
                 else:
                     cCode += c
         fullStr = cCode + dig
-        isOk = len( fullStr )>=21 and self.clutter==""
+        isOk = len(fullStr) >= 21 and not self.clutter
         if not isOk:
             return ""
-        if cCode=="PT":
+        if cCode == IbanMethods().country_abbrev:
             nibOk = True
-            self.nib = fullStr[ 4: ]
+            self.nib = fullStr[4:]
         if not nibOk:
-            if len( fullStr )>=self.minNIB_length:
-                self.nib = fullStr[ len( cCode ): ]
-                nibOk = cCode==""
-        if len( self.nib )>0:
-            nr19 = self.nib[ :-2 ]
+            if len(fullStr) >= self.minNIB_length:
+                self.nib = fullStr[len( cCode ):]
+                nibOk = cCode == ""
+        if self.nib:
+            nr19 = self.nib[:-2]
             tup = self.calc_check_digit(nr19)
-            self.validCRC = tup[ 3 ]==self.nib
+            self.validCRC = tup[3] == self.nib
             self.validNIB = nibOk
         return fullStr
 
 
 class IbanMethods():
     """ IBAN methods class """
-    _country_abbrev = "pt"
+    country_abbrev = "PT"
 
     def calc_check_digit(self, nr19):
         """ calc. check digit from 19 digit number ('NIBwoD')
 		- Portugal, see https://www.bportugal.pt/page/iban
         """
-        if IbanMethods._country_abbrev == "pt":
+        if IbanMethods.country_abbrev == "PT":
             return IbanMethods.calc_check_digit_pt(nr19)
         return (False, "", -1, "", -1)
 
@@ -126,15 +126,16 @@ class IbanMethods():
         return (False, "", -1, "?", aNum)
 
     @staticmethod
-    def ban_bcmod97(iban):
+    def ban_bcmod97(iban) -> int:
         """ Banco de Portugal NIB calculation
         """
         assert isinstance(iban, str)
         assert len(iban) > 4, f"IBAN too short: {iban}"
-        b = iban[4:] + iban[:4]
-        tranStr = IbanMethods().ban_translate(b)
-        aNum = int(tranStr)
-        val = (aNum % 97)
+        bstr = iban[4:] + iban[:4]
+        transtr = IbanMethods().ban_translate(bstr)
+        anum = int(transtr)
+        val = anum % 97
+        print("anum:", anum, "; val:", val, "; bstr:", bstr)
         return val
 
     @staticmethod
@@ -151,7 +152,7 @@ class IbanMethods():
                 if v < 10 or v >= 36:
                     return "0"
             res += str(v)
-            return res
+        return res
 
 
 def verify_check_digit(nibStr):

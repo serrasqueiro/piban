@@ -8,6 +8,8 @@ from piban.ptnib import slimIBAN, verify_check_digit, valid_iban
 
 # pylint: disable=invalid-name
 
+UNICEF_IBAN = "PT50 0033 0000 5013 1901 2290 5"	# UNICEF IBAN in Portugal
+
 
 def main():
     """ Main script """
@@ -24,13 +26,13 @@ def test_pt_nib(args):
     """
     code = 0
     if not args:
-        ibanStr = "PT50 0033 0000 5013 1901 2290 5"  # UNICEF IBAN in Portugal
+        ibanStr = UNICEF_IBAN
     else:
         ibanStr = ' '.join(args)
     if not ibanStr.strip():
         return 0
     si = slimIBAN(ibanStr)
-    isUNICEF = "50131901" in si.nib
+    isUNICEF = si.nib == UNICEF_IBAN.replace(" ", "")[4:]
     print(
         "Entered IBAN: {}{}\n{}".
         format(
@@ -68,6 +70,7 @@ def test_pt_nib(args):
         "; isNIB:", isNIB, "; IBAN?", valid_iban(si.niban),
         "; check digits:", digitsKK,
     )
+    print("NIBAN:", si.niban)
     code = 0 if si.all_valid() else 1
     if not isOk:
         return 2
