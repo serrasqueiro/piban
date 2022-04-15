@@ -40,16 +40,16 @@ def test_pt_nib(args):
             "--" * 20,
             ),
     )
-    if si.clutter:
-        print("Clutter len#" + str(len(si.clutter)) + ":", si.clutter)
+    clutter = si.get_clutter()
+    if clutter:
+        print("Clutter len#" + str(len(clutter)) + ":", clutter)
     print(
         "NIB:", si.nib,
-        "Valid?", si.validNIB,
-        "CRC_ok?", si.validCRC,
         "; All valid?", si.all_valid(),
     )
     print("s:\t{}".format(si.s))
     print("niban:\t{}".format(si.niban))
+    print("validNIB:", si.validNIB, "; validCRC:", si.validCRC)
     rNIB = si.readable_nib()
     print(
         ("--" * 20) + "\n" + "Readable NIB:", rNIB if rNIB else "<error>",
@@ -70,7 +70,8 @@ def test_pt_nib(args):
         "; isNIB:", isNIB, "; IBAN?", valid_iban(si.niban),
         "; check digits:", digitsKK,
     )
-    print("NIBAN:", si.niban)
+    print("NIB or IBAN:", si.niban)
+    print("repr():", repr(si))
     code = 0 if si.all_valid() else 1
     if not isOk:
         return 2

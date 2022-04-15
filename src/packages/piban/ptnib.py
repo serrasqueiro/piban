@@ -52,7 +52,13 @@ class slimIBAN():
         astr = self.readable_nib()
         if not astr:
             return ""
-        astr = self.niban[:4] + " " + astr
+        if len(self.nib) <= self.min_nib_length():
+            prefix = IbanMethods.prefix_for()
+            if prefix:
+                prefix = f"{prefix} "
+            astr = prefix + astr
+        else:
+            astr = self.niban[:4] + " " + astr
         return astr
 
     def __repr__(self) -> str:
@@ -64,6 +70,10 @@ class slimIBAN():
             return ""
         s = self.nib
         return s[:4] + " " + s[4:8] + " " + s[8:19] + " " + s[19:]
+
+    def get_clutter(self) -> str:
+        """ Returns clutter (if any), a string. Empty means ok! """
+        return self._clutter
 
     def set_iban_or_nib(self, aStr):
         nStr = trim_number(aStr)
@@ -113,6 +123,25 @@ class IbanMethods():
         if IbanMethods.country_abbrev == "PT":
             return IbanMethods.calc_check_digit_pt(nr19)
         return (False, "", -1, "", -1)
+
+    @staticmethod
+    def prefix_for(country:str="") -> str:
+        assert isinstance(country, str)
+        if not country:
+            country = IbanMethods.country_abbrev
+        candidates = []
+        for key in sorted(VALID_IBAN_PREFIXES):
+            item = VALID_IBAN_PREFIXES[key]
+            if country == item:
+                return key
+            abbrev = f''.join(filter(str.isalpha, key))
+            if not abbrev:
+                continue
+            if country == abbrev:
+                candidates.append(key)
+        if len(candidates) > 1 or not candidates:
+            return ""
+        return candidates[0]
 
     @staticmethod
     def calc_check_digit_pt(nr19):
